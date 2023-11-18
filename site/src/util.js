@@ -14,8 +14,9 @@ g.util = {};
 		}
 	};
 
-	// Fade in function
-	g.util.fade = function ( container, direction, action, speed ) {
+	g.util.fade = fade;
+
+	function fade ( container, direction, action, speed ) {
 		if( direction === undefined ) {
 			direction = 1;
 		}
@@ -29,10 +30,10 @@ g.util = {};
 			g.app.ticker.remove( m.fade.ticker );
 		}
 		m.fade.isActive = true;
-		g.app.ticker.add( fade);
+		g.app.ticker.add( runFade);
 	};
 
-	function fade( delta ) {
+	function runFade( delta ) {
 		const f = m.fade;
 		if (
 			( f.direction === 1 && f.container.alpha >= 1 ) ||

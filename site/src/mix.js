@@ -4,7 +4,8 @@ const g = {
 	"width": 768,
 	"height": 1024,
 	"app": null,
-	"util": null
+	"util": null,
+	"game": null
 };
 
 ( function () {
@@ -39,7 +40,9 @@ const g = {
 
 	async function loadAssets() {
 		const basicTexturesPromise = PIXI.Assets.load( "assets/basic_textures.json" );
+		const backgroundPromise = PIXI.Assets.load( "assets/images/background.png" );
 		g.textures = await basicTexturesPromise;
+		g.textures.background = backgroundPromise.texture;
 	}
 
 	function createTitleScreen() {
