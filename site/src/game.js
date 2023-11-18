@@ -40,8 +40,8 @@ g.game = {};
 			for ( let j = 0; j < level.width; j++ ) {
 
 				// Create the tile background sprite
-				const tileBack = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_05.png" ] );
-				tileBack.tint = "#7CD7FF";
+				const tileBack = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_06.png" ] );
+				tileBack.tint = "#bcbcbc";
 				tileBack.anchor.set( 0.5 );
 
 				// Set the scale so that the tile is the right size
@@ -54,7 +54,7 @@ g.game = {};
 				tileBack.y = pos[ 1 ];
 
 				// Set the alpha so that the tile is transparent
-				tileBack.alpha = 0.5;
+				tileBack.alpha = 0.75;
 
 				m.gameContainer.addChild( tileBack );
 			}
@@ -76,8 +76,10 @@ g.game = {};
 
 	function tilePosToScreenPos( tile ) {
 		return [
-			( tile[ 0 ] * ( m.tileContainerSize + m.tileGap ) ) + g.width / 2 - m.tileContainerSize,
-			( tile[ 1 ] * ( m.tileContainerSize + m.tileGap ) ) + g.height / 2 - m.tileContainerSize
+			( tile[ 0 ] * ( m.tileContainerSize + m.tileGap ) ) +
+				g.width / 2 - m.tileContainerSize * ( m.levels[ m.level ].width - 1 ) / 2,
+			( tile[ 1 ] * ( m.tileContainerSize + m.tileGap ) ) +
+				g.height / 2 - m.tileContainerSize * m.levels[ m.level ].height / 2
 		];
 	}
 
