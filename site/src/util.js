@@ -27,7 +27,7 @@ g.util = {};
 			m.fade.speed = speed;
 		}
 		if( m.fade.isActive ) {
-			g.app.ticker.remove( m.fade.ticker );
+			g.app.ticker.remove( runFade );
 		}
 		m.fade.isActive = true;
 		g.app.ticker.add( runFade);
@@ -40,7 +40,7 @@ g.util = {};
 			( f.direction === -1 && f.container.alpha <= 0 )
 		) {
 			f.isActive = false;
-			g.app.ticker.remove( fade );
+			g.app.ticker.remove( runFade );
 			if ( f.action ) {
 				f.action();
 			}

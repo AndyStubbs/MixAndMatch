@@ -4,6 +4,8 @@ const g = {
 	"width": 768,
 	"height": 1024,
 	"app": null,
+	"spritesheet": null,
+	"background": null,
 	"util": null,
 	"game": null
 };
@@ -39,10 +41,11 @@ const g = {
 	}
 
 	async function loadAssets() {
-		const basicTexturesPromise = PIXI.Assets.load( "assets/basic_textures.json" );
-		const backgroundPromise = PIXI.Assets.load( "assets/images/background.png" );
-		g.textures = await basicTexturesPromise;
-		g.textures.background = backgroundPromise.texture;
+		const basicTexturesPromise = PIXI.Assets.load( "assets/images/basic_textures.json" );
+		const backgroundPromise = PIXI.Assets.load( "assets/images/rock_4.png" );
+		g.spritesheet = await basicTexturesPromise;
+		g.background = await backgroundPromise;
+		console.log(  g.background );
 	}
 
 	function createTitleScreen() {
@@ -69,6 +72,7 @@ const g = {
 		button.on( "pointerdown", () => {
 			g.util.fade( titleScreen, -1, () => {
 				g.app.stage.removeChild( titleScreen );
+				g.game.start();
 			} );
 		} );
 		button.on( "pointerover", () => {
