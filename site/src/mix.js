@@ -1,8 +1,9 @@
 "use strict";
 
 const g = {
-	"width": 768,
-	"height": 1024,
+	// 675x675
+	"width": 675,
+	"height": 900,
 	"app": null,
 	"spritesheet": null,
 	"background": null,
@@ -41,7 +42,7 @@ const g = {
 	}
 
 	async function loadAssets() {
-		const basicTexturesPromise = PIXI.Assets.load( "assets/images/basic_textures.json" );
+		const basicTexturesPromise = PIXI.Assets.load( "assets/images/tiles.json" );
 		const backgroundPromise = PIXI.Assets.load( "assets/images/rock_4.png" );
 		g.spritesheet = await basicTexturesPromise;
 		g.background = await backgroundPromise;
