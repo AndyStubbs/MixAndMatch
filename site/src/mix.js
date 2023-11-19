@@ -6,7 +6,6 @@ const g = {
 	"height": 900,
 	"app": null,
 	"spritesheet": null,
-	"background": null,
 	"util": null,
 	"game": null
 };
@@ -43,10 +42,7 @@ const g = {
 
 	async function loadAssets() {
 		const basicTexturesPromise = PIXI.Assets.load( "assets/images/tiles.json" );
-		const backgroundPromise = PIXI.Assets.load( "assets/images/rock_4.png" );
 		g.spritesheet = await basicTexturesPromise;
-		g.background = await backgroundPromise;
-		console.log(  g.background );
 	}
 
 	function createTitleScreen() {
