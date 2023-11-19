@@ -5,10 +5,14 @@ g.game = {};
 ( function () {
 
 	const m = {
-		"gameContainer": null,
+		"container": null,
 		"tileContainerSize": 64,
 		"tileSize": 50,
 		"tileGap": 0,
+		"tileBackTint": "#3f372c",
+		"tileBackTintHover": "#8a8a6a",
+		"nextPieceBackTint": "#121212",
+		"wildcardTint": "#838383",
 		"level": 0,
 		"levels": [
 			{ "name": "Level 1", "width": 3, "height": 3, "start": [ 1, 1 ] }
@@ -19,21 +23,12 @@ g.game = {};
 
 	function start() {
 		createGame();
+		createNextPiece();
 	}
 
 	function createGame() {
-		m.gameContainer = new PIXI.Container();
-		g.app.stage.addChild( m.gameContainer );
-
-		const width = g.width;
-		const height = g.height;
-		const background = new PIXI.TilingSprite( g.background, width, height );
-		background.anchor.set( 0.5 );
-		background.x = g.width / 2;
-		background.y = g.height / 2;
-		background.tint = "#96A6BC";
-		background.alpha = 0.5;
-		m.gameContainer.addChild( background );
+		m.container = new PIXI.Container();
+		g.app.stage.addChild( m.container );
 
 		const level = m.levels[ m.level ];
 		for ( let i = 0; i < level.height; i++ ) {
@@ -41,7 +36,7 @@ g.game = {};
 
 				// Create the tile background sprite
 				const tileBack = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_06.png" ] );
-				tileBack.tint = "#bcbcbc";
+				tileBack.tint = m.tileBackTint;
 				tileBack.anchor.set( 0.5 );
 
 				// Set the scale so that the tile is the right size
@@ -53,16 +48,27 @@ g.game = {};
 				tileBack.x = pos[ 0 ];
 				tileBack.y = pos[ 1 ];
 
-				// Set the alpha so that the tile is transparent
-				tileBack.alpha = 0.75;
+				// Setup the tile to be interactive
+				tileBack.interactive = true;
+				tileBack.buttonMode = true;
 
-				m.gameContainer.addChild( tileBack );
+				// Setup events for the tile
+				tileBack.on( "pointerover", function () {
+					this.tint = m.tileBackTintHover;
+				} );
+
+				tileBack.on( "pointerout", function () {
+					this.tint = m.tileBackTint;
+				} );
+
+				// Add the tile to the game container
+				m.container.addChild( tileBack );
 			}
 		}
 
 		// Create the starting tile
 		const tile = new PIXI.Sprite( g.spritesheet.textures[ "tileGrey_39.png" ] );
-		tile.tint = "#838383";
+		tile.tint = m.wildcardTint;
 		tile.anchor.set( 0.5 );
 
 		// Set the scale so that the tile is the right size
@@ -71,7 +77,19 @@ g.game = {};
 		const pos = tilePosToScreenPos( level.start );
 		tile.x = pos[ 0 ];
 		tile.y = pos[ 1 ];
-		m.gameContainer.addChild( tile );
+		m.container.addChild( tile );
+
+		// Create the next piece tile background
+		const nextPieceBack = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_06.png" ] );
+		nextPieceBack.tint = m.nextPieceBackTint;
+		nextPieceBack.anchor.set( 0.5 );
+		
+		// Set the scale so that the tile is the right size
+		nextPieceBack.scale.x =  m.tileContainerSize / nextPieceBack.width;
+		nextPieceBack.scale.y =  m.tileContainerSize / nextPieceBack.height;
+		nextPieceBack.x = g.width / 2;
+		nextPieceBack.y = g.height - m.tileSize * 3;
+		m.container.addChild( nextPieceBack );
 	}
 
 	function tilePosToScreenPos( tile ) {
@@ -81,6 +99,19 @@ g.game = {};
 			( tile[ 1 ] * ( m.tileContainerSize + m.tileGap ) ) +
 				g.height / 2 - m.tileContainerSize * m.levels[ m.level ].height / 2
 		];
+	}
+
+	function createNextPiece() {
+		const nextPiece = new PIXI.Sprite( g.spritesheet.textures[ "tileBlue_33.png" ] );
+		nextPiece.tint = m.wildcardTint;
+		nextPiece.anchor.set( 0.5 );
+
+		// Set the scale so that the tile is the right size
+		nextPiece.scale.x =  m.tileSize / nextPiece.width;
+		nextPiece.scale.y =  m.tileSize / nextPiece.height;
+		nextPiece.x = g.width / 2;
+		nextPiece.y = g.height - m.tileSize * 3;
+		m.container.addChild( nextPiece );
 	}
 
 } )();
