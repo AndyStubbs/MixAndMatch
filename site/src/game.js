@@ -5,19 +5,26 @@ g.game = {};
 ( function () {
 
 	const m = {
+		"shapes": {
+			"*": "39",
+			"star": "33"
+		},
 		"container": null,
 		"tileContainerSize": 64,
 		"tileSize": 50,
 		"tileGap": 0,
 		"tileBackTint": "#3f372c",
-		"tileBackTintHover": "#6a8a6a",
+		"validSquareTint": "#6a8a6a",
+		"invalidSquareTint": "#8a6a6a",
 		"nextPieceBackTint": "#aeaeae",
 		"wildcardTint": "#838383",
 		"nextPiece": null,
 		"level": 0,
 		"levels": [
-			{ "name": "Level 1", "width": 3, "height": 3, "start": [ 1, 1 ] }
-		]
+			{ "name": "Level 1", "width": 3, "height": 3, "start": [ 1, 1 ], "colors": 3, "shapes": 3 }
+		],
+		"map": null,
+		"isActive": false
 	};
 
 	g.game.start = start;
@@ -25,32 +32,30 @@ g.game = {};
 	function start() {
 		createGame();
 		createNextPiece();
+		m.isActive = true;
 	}
 
 	function createGame() {
 		m.container = new PIXI.Container();
 		g.app.stage.addChild( m.container );
 
+		m.map = [];
 		const level = m.levels[ m.level ];
 		for ( let row = 0; row < level.height; row++ ) {
+			m.map.push( [] );
 			for ( let col = 0; col < level.width; col++ ) {
-				createTileBack( col, row );
+				m.map[ row ].push( {
+					"tile": null,
+					"square": createBoardSquare( col, row )
+				} );
 			}
 		}
 
 		// Create the starting tile
-		const tile = new PIXI.Sprite( g.spritesheet.textures[ "tileGrey_39.png" ] );
-		tile.tint = m.wildcardTint;
-		tile.anchor.set( 0.5 );
-
-		// Set the scale so that the tile is the right size
-		tile.scale.x =  m.tileSize / tile.width;
-		tile.scale.y =  m.tileSize / tile.height;
 		const pos = tilePosToScreenPos( level.start );
-		tile.x = pos[ 0 ];
-		tile.y = pos[ 1 ];
-		m.container.addChild( tile );
-
+		const tile = createTile( "*", "*", pos[ 0 ], pos[ 1 ] );
+		m.map[ level.start[ 1 ] ][ level.start[ 0 ] ].tile = tile;
+	
 		// Create the next piece tile background
 		const nextPieceBack = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_05.png" ] );
 		nextPieceBack.tint = m.nextPieceBackTint;
@@ -64,52 +69,39 @@ g.game = {};
 		m.container.addChild( nextPieceBack );
 	}
 
-	function createTileBack( x, y ) {
+	function createBoardSquare( x, y ) {
 
 		// Create the tile background sprite
-		const tileBack = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_06.png" ] );
-		tileBack.tint = m.tileBackTint;
-		tileBack.anchor.set( 0.5 );
+		const boardSquare = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_06.png" ] );
+
+		boardSquare.customData = { "x": x, "y": y };
+		boardSquare.tint = m.tileBackTint;
+		boardSquare.anchor.set( 0.5 );
 
 		// Set the scale so that the tile is the right size
-		tileBack.scale.x =  m.tileContainerSize / tileBack.width;
-		tileBack.scale.y =  m.tileContainerSize / tileBack.height;
+		boardSquare.scale.x =  m.tileContainerSize / boardSquare.width;
+		boardSquare.scale.y =  m.tileContainerSize / boardSquare.height;
 
 		// Set the position so that the tile is in the right place
 		const pos = tilePosToScreenPos( [ x, y ] );
-		tileBack.x = pos[ 0 ];
-		tileBack.y = pos[ 1 ];
+		boardSquare.x = pos[ 0 ];
+		boardSquare.y = pos[ 1 ];
 
 		// Setup the tile to be interactive
-		tileBack.interactive = true;
-		tileBack.buttonMode = true;
+		boardSquare.interactive = true;
+		boardSquare.buttonMode = true;
 
 		// Setup events for the tile
-		tileBack.on( "pointerover", function () {
-			this.tint = m.tileBackTintHover;
-		} );
+		boardSquare.on( "pointerover", squarePointerOver );
 
-		tileBack.on( "pointerout", function () {
-			this.tint = m.tileBackTint;
-		} );
+		boardSquare.on( "pointerout", squarePointerOut );
 
-		tileBack.on( "pointerdown", function () {
-			g.util.ease(
-				[ m.nextPiece.x, m.nextPiece.y ],
-				[ tileBack.x, tileBack.y ],
-				25,
-				function ( pos ) {
-					m.nextPiece.x = pos[ 0 ];
-					m.nextPiece.y = pos[ 1 ];
-				},
-				function () {
-					console.log( "Done" );
-				}
-			);
-		} );
+		boardSquare.on( "pointerdown", squarePointerDown );
 
 		// Add the tile to the game container
-		m.container.addChild( tileBack );
+		m.container.addChild( boardSquare );
+
+		return boardSquare;
 	}
 
 	function tilePosToScreenPos( tile ) {
@@ -121,25 +113,122 @@ g.game = {};
 		];
 	}
 
-	function createNextPiece() {
+	function createTile( shape, color, x, y ) {
 
-		// Create the next piece container
-		m.nextPiece = new PIXI.Container();
-		m.nextPiece.x = g.width / 2;
-		m.nextPiece.y = g.height - m.tileSize * 3;
-		m.container.addChild( m.nextPiece );
+		// Create the tile
+		const tile = {
+			"shape": shape,
+			"color": color,
+			"container": null,
+			"sprite": null
+		};
+
+		// Create the tile container
+		tile.container = new PIXI.Container();
+		tile.container.x = x;
+		tile.container.y = y;
 
 		// Create the next piece tile
-		const nextPieceSprite = new PIXI.Sprite( g.spritesheet.textures[ "tileBlue_33.png" ] );
-		nextPieceSprite.tint = m.wildcardTint;
-		nextPieceSprite.anchor.set( 0.5 );
+		if( color === "*" ) {
+			color = "Grey";
+		}
+		let spriteName = "tile" + color + "_" + m.shapes[ shape ] + ".png";
+		const sprite = new PIXI.Sprite( g.spritesheet.textures[ spriteName ] );
+		sprite.tint = m.wildcardTint;
+		sprite.anchor.set( 0.5 );
 
 		// Set the scale so that the tile is the right size
-		nextPieceSprite.scale.x =  m.tileSize / nextPieceSprite.width;
-		nextPieceSprite.scale.y =  m.tileSize / nextPieceSprite.height;
-		nextPieceSprite.x = 0;
-		nextPieceSprite.y = 0;
-		m.nextPiece .addChild( nextPieceSprite );
+		sprite.scale.x =  m.tileSize / sprite.width;
+		sprite.scale.y =  m.tileSize / sprite.height;
+		sprite.x = 0;
+		sprite.y = 0;
+
+		tile.container.addChild( sprite );
+		m.container.addChild( tile.container );
+
+		return tile;
+	}
+
+	function createNextPiece() {
+		m.nextPiece = createTile( "star", "Blue", g.width / 2, g.height - m.tileSize * 3 );
+	}
+
+	function squarePointerOver( e ) {
+		const boardSquare = e.currentTarget;
+
+		if( canPlaceTile( boardSquare ) ) {
+			boardSquare.tint = m.validSquareTint;
+		} else {
+			boardSquare.tint = m.invalidSquareTint;
+		
+		}
+	}
+
+	function squarePointerOut( e ) {
+		const boardSquare = e.currentTarget;
+		boardSquare.tint = m.tileBackTint;
+	}
+
+	function squarePointerDown( e ) {
+		if( !m.isActive ) {
+			return;
+		}
+		const boardSquare = e.currentTarget;
+		if( !canPlaceTile( boardSquare ) ) {
+			return;
+		}
+		m.isActive = false;
+		g.util.ease(
+			[ m.nextPiece.container.x, m.nextPiece.container.y ],
+			[ boardSquare.x, boardSquare.y ],
+			25,
+			function ( pos ) {
+				m.nextPiece.container.x = pos[ 0 ];
+				m.nextPiece.container.y = pos[ 1 ];
+			},
+			function () {
+				const pos = boardSquare.customData;
+				m.map[ pos.y ][ pos.x ].tile = m.nextPiece;
+				createNextPiece();
+				m.isActive = true;
+			}
+		);
+	}
+
+	function canPlaceTile( boardSquare ) {
+		const pos = boardSquare.customData;
+		const tile = m.map[ pos.y ][ pos.x ].tile;
+		if ( tile ) {
+			return false;
+		}
+
+		// Check if the tile is adjacent to another tile
+		const neighbors = getNeighbors( pos.x, pos.y );
+		for ( let i = 0; i < neighbors.length; i++ ) {
+			const neighbor = neighbors[ i ];
+			if ( neighbor.tile ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function getNeighbors( x, y ) {
+		const neighbors = [];
+		const level = m.levels[ m.level ];
+		if ( x > 0 ) {
+			neighbors.push( m.map[ y ][ x - 1 ] );
+		}
+		if ( x < level.width - 1 ) {
+			neighbors.push( m.map[ y ][ x + 1 ] );
+		}
+		if ( y > 0 ) {
+			neighbors.push( m.map[ y - 1 ][ x ] );
+		}
+		if ( y < level.height - 1 ) {
+			neighbors.push( m.map[ y + 1 ][ x ] );
+		}
+		return neighbors;
 	}
 
 } )();
