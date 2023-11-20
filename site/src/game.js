@@ -24,7 +24,8 @@ g.game = {};
 			{ "name": "Level 1", "width": 3, "height": 3, "start": [ 1, 1 ], "colors": 3, "shapes": 3 }
 		],
 		"map": null,
-		"isActive": false
+		"isActive": false,
+		"activeSquare": null
 	};
 
 	g.game.start = start;
@@ -156,17 +157,22 @@ g.game = {};
 	function squarePointerOver( e ) {
 		const boardSquare = e.currentTarget;
 
-		if( canPlaceTile( boardSquare ) ) {
+		m.activeSquare = boardSquare;
+		setSquareHoverTint( boardSquare );
+	}
+
+	function setSquareHoverTint( boardSquare ) {
+		if( m.isActive && canPlaceTile( boardSquare ) ) {
 			boardSquare.tint = m.validSquareTint;
 		} else {
 			boardSquare.tint = m.invalidSquareTint;
-		
 		}
 	}
 
 	function squarePointerOut( e ) {
 		const boardSquare = e.currentTarget;
 		boardSquare.tint = m.tileBackTint;
+		m.activeSquare = null;
 	}
 
 	function squarePointerDown( e ) {
@@ -191,6 +197,9 @@ g.game = {};
 				m.map[ pos.y ][ pos.x ].tile = m.nextPiece;
 				createNextPiece();
 				m.isActive = true;
+				if( m.activeSquare ) {
+					setSquareHoverTint( m.activeSquare );
+				}
 			}
 		);
 	}
