@@ -9,11 +9,10 @@ g.game = {};
 		"tileContainerSize": 64,
 		"tileSize": 50,
 		"tileGap": 0,
-		"tileBackTint": "#3f372c",
-		"validSquareTint": "#6a8a6a",
-		"invalidSquareTint": "#8a6a6a",
+		"tileBackTint": "#5193DB",
+		"validSquareTint": "#6aff6a",
+		"invalidSquareTint": "#ff6a6a",
 		"nextPieceBackTint": "#aeaeae",
-		"wildcardTint": "#838383",
 		"nextPiece": null,
 		"level": null,
 		"map": null,
@@ -118,7 +117,7 @@ g.game = {};
 		}
 		let spriteName = "tile" + color + "_" + g.shapes[ shape ] + ".png";
 		const sprite = new PIXI.Sprite( g.spritesheet.textures[ spriteName ] );
-		//sprite.tint = m.wildcardTint;
+		tile.sprite = sprite;
 		sprite.anchor.set( 0.5 );
 
 		// Set the scale so that the tile is the right size
@@ -139,10 +138,10 @@ g.game = {};
 		m.nextPiece = createTile( shape, color, g.width / 4, g.height - m.tileSize * 3 );
 
 		// Slowly move the next piece to the black hole
-		g.util.ease(
+		m.nextPiece.ease = g.util.ease(
 			[ m.nextPiece.container.x, m.nextPiece.container.y ],
 			[ g.width - g.width / 4, g.height - m.tileSize * 3 ],
-			125,
+			500,
 			function ( pos ) {
 				m.nextPiece.container.x = pos[ 0 ];
 				m.nextPiece.container.y = pos[ 1 ];
@@ -193,7 +192,8 @@ g.game = {};
 			return;
 		}
 		m.isActive = false;
-		g.util.ease(
+		m.nextPiece.ease.stop();
+		m.nextPiece.ease = g.util.ease(
 			[ m.nextPiece.container.x, m.nextPiece.container.y ],
 			[ boardSquare.x, boardSquare.y ],
 			25,
