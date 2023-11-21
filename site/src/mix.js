@@ -1,13 +1,14 @@
 "use strict";
 
 const g = {
-	// 675x675
 	"width": 675,
 	"height": 900,
 	"app": null,
 	"spritesheet": null,
 	"util": null,
-	"game": null
+	"game": null,
+	"shapes": null,
+	"levels": null
 };
 
 ( function () {
@@ -69,7 +70,7 @@ const g = {
 		button.on( "pointerdown", () => {
 			g.util.fade( titleScreen, -1, () => {
 				g.app.stage.removeChild( titleScreen );
-				g.game.start();
+				g.game.start( g.levels[ 0 ] );
 			} );
 		} );
 		button.on( "pointerover", () => {

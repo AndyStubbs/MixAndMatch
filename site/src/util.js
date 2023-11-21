@@ -13,18 +13,18 @@ g.util = {};
 			"speed": 0.05,
 		},
 		"ease": {
-			"from": null,
-			"to": null,
-			"change": null,
-			"duration": null,
-			"elapsed": 0,
-			"onStep": null,
-			"onComplete": null
+			"eases": [],
+			"ticker": null
+		},
+		"rotate": {
+			"rotations": [],
+			"ticker": null
 		}
 	};
 
 	g.util.fade = fade;
 	g.util.ease = ease;
+	g.util.rotate = rotate;
 
 	function fade ( container, direction, action, speed ) {
 		if( direction === undefined ) {
@@ -66,44 +66,92 @@ g.util = {};
 		if( !Array.isArray( to ) ) {
 			to = [ to ];
 		}
-		m.ease.from = from;
-		m.ease.to = to;
-		m.ease.change = [];
-		m.ease.duration = duration;
-		m.ease.onStep = onStep;
-		m.ease.onComplete = onComplete;
+		const ease = {
+			"from": from,
+			"to": to,
+			"change": [],
+			"duration": duration,
+			"elapsed": 0,
+			"onStep": onStep,
+			"onComplete": onComplete
+		};
 
 		// Compute the change for each value
 		for( let i = 0; i < from.length; i++ ) {
 			const diff = to[ i ] - from[ i ];
-			m.ease.change.push( diff );
+			ease.change.push( diff );
 		}
-		g.app.ticker.add( runEase );
+
+		m.ease.eases.push( ease );
+		if( !m.ease.ticker ) {
+			m.ease.ticker = g.app.ticker.add( runEase );
+		}
+
+		return {
+			"stop": function () {
+				const index = m.ease.eases.indexOf( ease );
+				if( index !== -1 ) {
+					m.ease.eases.splice( index, 1 );
+				}
+			}
+		};
 	}
 
 	function runEase( delta ) {
-		m.ease.elapsed += delta;
-		const timeRemaining = m.ease.duration - m.ease.elapsed;
-		if ( timeRemaining <= 0 ) {
-			m.ease.elapsed = 0;
-			m.ease.onStep( m.ease.to );
-			g.app.ticker.remove( runEase );
-			if ( m.ease.onComplete ) {
-				m.ease.onComplete();
+		const easesToRemove = [];
+		m.ease.eases.forEach( ( ease, i ) => {
+			ease.elapsed += delta;
+			const timeRemaining = ease.duration - ease.elapsed;
+			if ( timeRemaining <= 0 ) {
+				ease.elapsed = 0;
+				ease.onStep( ease.to );
+				easesToRemove.push( i );
+				if ( ease.onComplete ) {
+					ease.onComplete();
+				}
+				return;
 			}
-			return;
+			const t = timeRemaining / ease.duration;
+			const vals = [];
+			for( let i = 0; i < ease.from.length; i++ ) {
+				const val = ease.from[ i ] + ( 1 - easeInOutSine( t ) ) * ease.change[ i ];
+				vals.push( val );
+			}
+			ease.onStep( vals );
+		} );
+
+		// Remove completed eases
+		for ( let i = 0; i < easesToRemove.length; i++ ) {
+			m.ease.eases.splice( easesToRemove[ i ], 1 );
 		}
-		const t = timeRemaining / m.ease.duration;
-		const vals = [];
-		for( let i = 0; i < m.ease.from.length; i++ ) {
-			const val = m.ease.from[ i ] + ( 1 - easeInOutSine( t ) ) * m.ease.change[ i ];
-			vals.push( val );
+
+		// Remove ticker if there are no more eases
+		if( m.ease.eases.length === 0 ) {
+			g.app.ticker.remove( runEase );
+			m.ease.ticker = null;
 		}
-		m.ease.onStep( vals );
 	}
 
 	function easeInOutSine( time ) {
 		return ( 1 - Math.cos( Math.PI * time ) ) / 2;
+	}
+
+	function rotate( container, speed ) {
+		const rotation = {
+			"container": container,
+			"speed": speed
+		};
+		m.rotate.rotations.push( rotation );
+		if ( !m.rotate.ticker ) {
+			m.rotate.ticker = g.app.ticker.add( runRotate );
+		}
+	}
+
+	function runRotate( delta ) {
+		for ( let i = 0; i < m.rotate.rotations.length; i++ ) {
+			const rotation = m.rotate.rotations[ i ];
+			rotation.container.rotation += rotation.speed * delta;
+		}
 	}
 
 } )();

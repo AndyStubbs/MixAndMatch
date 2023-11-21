@@ -5,10 +5,6 @@ g.game = {};
 ( function () {
 
 	const m = {
-		"shapes": {
-			"*": "39",
-			"star": "33"
-		},
 		"container": null,
 		"tileContainerSize": 64,
 		"tileSize": 50,
@@ -19,10 +15,7 @@ g.game = {};
 		"nextPieceBackTint": "#aeaeae",
 		"wildcardTint": "#838383",
 		"nextPiece": null,
-		"level": 0,
-		"levels": [
-			{ "name": "Level 1", "width": 3, "height": 3, "start": [ 1, 1 ], "colors": 3, "shapes": 3 }
-		],
+		"level": null,
 		"map": null,
 		"isActive": false,
 		"activeSquare": null
@@ -30,8 +23,10 @@ g.game = {};
 
 	g.game.start = start;
 
-	function start() {
+	function start( level ) {
+		m.level = level;
 		createGame();
+		createBlackHole();
 		createNextPiece();
 		m.isActive = true;
 	}
@@ -41,7 +36,7 @@ g.game = {};
 		g.app.stage.addChild( m.container );
 
 		m.map = [];
-		const level = m.levels[ m.level ];
+		const level = m.level;
 		for ( let row = 0; row < level.height; row++ ) {
 			m.map.push( [] );
 			for ( let col = 0; col < level.width; col++ ) {
@@ -56,18 +51,6 @@ g.game = {};
 		const pos = tilePosToScreenPos( level.start );
 		const tile = createTile( "*", "*", pos[ 0 ], pos[ 1 ] );
 		m.map[ level.start[ 1 ] ][ level.start[ 0 ] ].tile = tile;
-	
-		// Create the next piece tile background
-		const nextPieceBack = new PIXI.Sprite( g.spritesheet.textures[ "BackTile_05.png" ] );
-		nextPieceBack.tint = m.nextPieceBackTint;
-		nextPieceBack.anchor.set( 0.5 );
-		
-		// Set the scale so that the tile is the right size
-		nextPieceBack.scale.x =  m.tileContainerSize / nextPieceBack.width;
-		nextPieceBack.scale.y =  m.tileContainerSize / nextPieceBack.height;
-		nextPieceBack.x = g.width / 2;
-		nextPieceBack.y = g.height - m.tileSize * 3;
-		m.container.addChild( nextPieceBack );
 	}
 
 	function createBoardSquare( x, y ) {
@@ -108,9 +91,9 @@ g.game = {};
 	function tilePosToScreenPos( tile ) {
 		return [
 			( tile[ 0 ] * ( m.tileContainerSize + m.tileGap ) ) +
-				g.width / 2 - m.tileContainerSize * ( m.levels[ m.level ].width - 1 ) / 2,
+				g.width / 2 - m.tileContainerSize * ( m.level.width - 1 ) / 2,
 			( tile[ 1 ] * ( m.tileContainerSize + m.tileGap ) ) +
-				g.height / 2 - m.tileContainerSize * m.levels[ m.level ].height / 2
+				g.height / 2 - m.tileContainerSize * m.level.height / 2
 		];
 	}
 
@@ -133,9 +116,9 @@ g.game = {};
 		if( color === "*" ) {
 			color = "Grey";
 		}
-		let spriteName = "tile" + color + "_" + m.shapes[ shape ] + ".png";
+		let spriteName = "tile" + color + "_" + g.shapes[ shape ] + ".png";
 		const sprite = new PIXI.Sprite( g.spritesheet.textures[ spriteName ] );
-		sprite.tint = m.wildcardTint;
+		//sprite.tint = m.wildcardTint;
 		sprite.anchor.set( 0.5 );
 
 		// Set the scale so that the tile is the right size
@@ -151,7 +134,33 @@ g.game = {};
 	}
 
 	function createNextPiece() {
-		m.nextPiece = createTile( "star", "Blue", g.width / 2, g.height - m.tileSize * 3 );
+		const shape = m.level.shapes[ Math.floor( Math.random() * m.level.shapes.length ) ];
+		const color = m.level.colors[ Math.floor( Math.random() * m.level.colors.length ) ];
+		m.nextPiece = createTile( shape, color, g.width / 4, g.height - m.tileSize * 3 );
+
+		// Slowly move the next piece to the black hole
+		g.util.ease(
+			[ m.nextPiece.container.x, m.nextPiece.container.y ],
+			[ g.width - g.width / 4, g.height - m.tileSize * 3 ],
+			125,
+			function ( pos ) {
+				m.nextPiece.container.x = pos[ 0 ];
+				m.nextPiece.container.y = pos[ 1 ];
+			}
+		);
+	}
+
+	function createBlackHole() {
+		const blackHole = new PIXI.Sprite( g.spritesheet.textures[ "black_hole.png" ] );
+		blackHole.anchor.set( 0.5 );
+		blackHole.x = g.width - g.width / 4;
+		blackHole.y = g.height - m.tileSize * 3;
+		blackHole.scale.x =  0.85;
+		blackHole.scale.y =  0.85;
+		m.container.addChild( blackHole );
+
+		// Create the black hole animation
+		g.util.rotate( blackHole, 0.004 );
 	}
 
 	function squarePointerOver( e ) {
@@ -224,7 +233,7 @@ g.game = {};
 
 	function getNeighbors( x, y ) {
 		const neighbors = [];
-		const level = m.levels[ m.level ];
+		const level = m.level;
 		if ( x > 0 ) {
 			neighbors.push( m.map[ y ][ x - 1 ] );
 		}
