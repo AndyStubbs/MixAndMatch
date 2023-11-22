@@ -12,7 +12,7 @@ g.game = {};
 		"tileBackTint": "#5183ee",
 		"validSquareTint": "#6aff6a",
 		"invalidSquareTint": "#ff6a6a",
-		"nextPieceBackTint": "#aeaeae",
+		"clearedSquareTint": "#eeee86",
 		"nextPiece": null,
 		"level": null,
 		"map": null,
@@ -23,33 +23,37 @@ g.game = {};
 	g.game.start = start;
 
 	function start( level ) {
+		m.container = new PIXI.Container();
+		g.app.stage.addChild( m.container );
 		m.level = level;
-		createGame();
 		createBlackHole();
-		createNextPiece();
+		createGame();
 		m.isActive = true;
 	}
 
 	function createGame() {
-		m.container = new PIXI.Container();
-		g.app.stage.addChild( m.container );
-
+		let startBoardSquare = null;
 		m.map = [];
 		const level = m.level;
 		for ( let row = 0; row < level.height; row++ ) {
 			m.map.push( [] );
 			for ( let col = 0; col < level.width; col++ ) {
+				const boardSquare = createBoardSquare( col, row );
 				m.map[ row ].push( {
 					"tile": null,
-					"square": createBoardSquare( col, row )
+					"square": boardSquare,
+					"backTint": m.tileBackTint
 				} );
+				if( col === level.start[ 0 ] && row === level.start[ 1 ] ) {
+					startBoardSquare = boardSquare;
+				}
 			}
 		}
 
 		// Create the starting tile
 		const pos = tilePosToScreenPos( level.start );
 		const tile = createTile( "*", "*", pos[ 0 ], pos[ 1 ] );
-		m.map[ level.start[ 1 ] ][ level.start[ 0 ] ].tile = tile;
+		placeTile( startBoardSquare, tile );
 	}
 
 	function createBoardSquare( x, y ) {
@@ -179,7 +183,8 @@ g.game = {};
 
 	function squarePointerOut( e ) {
 		const boardSquare = e.currentTarget;
-		boardSquare.tint = m.tileBackTint;
+		const square = m.map[ boardSquare.customData.y ][ boardSquare.customData.x ];
+		boardSquare.tint = square.backTint;
 		m.activeSquare = null;
 	}
 
@@ -202,15 +207,21 @@ g.game = {};
 				m.nextPiece.container.y = pos[ 1 ];
 			},
 			function () {
-				const pos = boardSquare.customData;
-				m.map[ pos.y ][ pos.x ].tile = m.nextPiece;
-				createNextPiece();
-				m.isActive = true;
-				if( m.activeSquare ) {
-					setSquareHoverTint( m.activeSquare );
-				}
+				placeTile( boardSquare, m.nextPiece );
 			}
 		);
+	}
+
+	function placeTile( boardSquare, tile ) {
+		const pos = boardSquare.customData;
+		m.map[ pos.y ][ pos.x ].tile = tile;
+		m.map[ pos.y ][ pos.x ].backTint = m.clearedSquareTint;
+		boardSquare.tint = m.clearedSquareTint;
+		createNextPiece();
+		m.isActive = true;
+		if( m.activeSquare ) {
+			setSquareHoverTint( m.activeSquare );
+		}
 	}
 
 	function canPlaceTile( boardSquare ) {

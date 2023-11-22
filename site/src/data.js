@@ -20,6 +20,6 @@ g.levels = [
 		"height": 5,
 		"start": [ 2, 2 ],
 		"colors": [ "Red", "Blue", "Green" ],
-		"shapes": [ "star1", "circle", "diamond" ]
+		"shapes": [ "star2", "circle", "diamond" ]
 	}
 ]
