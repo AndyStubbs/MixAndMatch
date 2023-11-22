@@ -1,5 +1,14 @@
 "use strict";
 
+const g = {
+	"width": 675,
+	"height": 900,
+	"app": null,
+	"spritesheet": null,
+	"util": null,
+	"game": null,
+};
+
 g.shapes = {
 	"*": "39",
 	"quad": "28",
@@ -20,6 +29,7 @@ g.levels = [
 		"height": 5,
 		"start": [ 2, 2 ],
 		"colors": [ "Red", "Blue", "Green" ],
-		"shapes": [ "star2", "circle", "diamond" ]
+		"shapes": [ "star2", "circle", "diamond" ],
+		"discards": 3
 	}
 ]

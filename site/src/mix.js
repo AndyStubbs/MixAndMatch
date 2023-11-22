@@ -1,16 +1,5 @@
 "use strict";
 
-const g = {
-	"width": 675,
-	"height": 900,
-	"app": null,
-	"spritesheet": null,
-	"util": null,
-	"game": null,
-	"shapes": null,
-	"levels": null
-};
-
 ( function () {
 
 	window.addEventListener( "DOMContentLoaded", init );
@@ -68,7 +57,7 @@ const g = {
 		button.interactive = true;
 		button.buttonMode = true;
 		button.on( "pointerdown", () => {
-			g.util.fade( titleScreen, -1, () => {
+			g.util.fade( titleScreen, -1, null, null, () => {
 				g.app.stage.removeChild( titleScreen );
 				g.game.start( g.levels[ 0 ] );
 			} );

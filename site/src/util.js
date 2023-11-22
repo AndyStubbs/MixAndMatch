@@ -5,19 +5,8 @@ g.util = {};
 ( function () {
 
 	const m = {
-		"fade": {
-			"container": null,
-			"action": null,
-			"direction": null,
-			"isActive": false,
-			"speed": 0.05,
-		},
-		"ease": {
-			"eases": [],
-			"ticker": null
-		},
-		"rotate": {
-			"rotations": [],
+		"animate": {
+			"animations": [],
 			"ticker": null
 		}
 	};
@@ -26,37 +15,21 @@ g.util = {};
 	g.util.ease = ease;
 	g.util.rotate = rotate;
 
-	function fade ( container, direction, action, speed ) {
-		if( direction === undefined ) {
+	function fade ( container, direction, speed, onStep, onComplete ) {
+		if( direction === undefined || direction === null ) {
 			direction = 1;
 		}
-		m.fade.container = container;
-		m.fade.action = action;
-		m.fade.direction = direction;
-		if( speed !== undefined ) {
-			m.fade.speed = speed;
+		if( speed === undefined || speed === null ) {
+			speed = 0.05;
 		}
-		if( m.fade.isActive ) {
-			g.app.ticker.remove( runFade );
-		}
-		m.fade.isActive = true;
-		g.app.ticker.add( runFade);
-	};
-
-	function runFade( delta ) {
-		const f = m.fade;
-		if (
-			( f.direction === 1 && f.container.alpha >= 1 ) ||
-			( f.direction === -1 && f.container.alpha <= 0 )
-		) {
-			f.isActive = false;
-			g.app.ticker.remove( runFade );
-			if ( f.action ) {
-				f.action();
-			}
-			return;
-		}
-		f.container.alpha += f.speed * f.direction * delta;
+		return animate( {
+			"action": "fade",
+			"container": container,
+			"direction": direction,
+			"speed": speed,
+			"onStep": onStep,
+			"onComplete": onComplete
+		} );
 	}
 
 	function ease( from, to, duration, onStep, onComplete ) {
@@ -66,92 +39,139 @@ g.util = {};
 		if( !Array.isArray( to ) ) {
 			to = [ to ];
 		}
-		const ease = {
-			"from": from,
-			"to": to,
-			"change": [],
-			"duration": duration,
-			"elapsed": 0,
-			"onStep": onStep,
-			"onComplete": onComplete
-		};
 
 		// Compute the change for each value
+		const change = [];
 		for( let i = 0; i < from.length; i++ ) {
 			const diff = to[ i ] - from[ i ];
-			ease.change.push( diff );
+			change.push( diff );
 		}
 
-		m.ease.eases.push( ease );
-		if( !m.ease.ticker ) {
-			m.ease.ticker = g.app.ticker.add( runEase );
+		return animate( {
+			"action": "ease",
+			"from": from,
+			"to": to,
+			"change": change,
+			"duration": duration,
+			"onStep": onStep,
+			"onComplete": onComplete
+		} );
+	}
+
+	function rotate( container, speed ) {
+		if( speed === undefined || speed === null ) {
+			speed = 0.05;
+		}
+		animate( {
+			"action": "rotate",
+			"container": container,
+			"speed": speed
+		} );
+	}
+
+	function animate( options ) {
+		if( !options.duration ) {
+			options.duration = Infinity;
+		}
+		const animation = {
+			"action": options.action,
+			"duration": options.duration,
+			"elapsed": 0,
+			"onComplete": options.onComplete,
+			"onStep": options.onStep,
+			"stepFunction": null,
+			"isActive": true
+		};
+		if( animation.action === "fade" ) {
+			animation.stepFunction = fadeStep;
+			animation.container = options.container;
+			animation.direction = options.direction;
+			animation.speed = options.speed;
+		} else if( animation.action === "ease" ) {
+			animation.stepFunction = easeStep;
+			animation.from = options.from;
+			animation.to = options.to;
+			animation.change = options.change;
+		} else if( animation.action === "rotate" ) {
+			animation.stepFunction = rotateStep;
+			animation.container = options.container;
+			animation.speed = options.speed;
+		}
+		m.animate.animations.push( animation );
+
+		if( !m.animate.ticker ) {
+			m.animate.ticker = g.app.ticker.add( runAnimations );
 		}
 
 		return {
 			"stop": function () {
-				const index = m.ease.eases.indexOf( ease );
+				const index = m.animate.animations.indexOf( animation );
 				if( index !== -1 ) {
-					m.ease.eases.splice( index, 1 );
+					m.animate.animations.splice( index, 1 );
 				}
 			}
 		};
 	}
 
-	function runEase( delta ) {
-		const easesToRemove = [];
-		m.ease.eases.forEach( ( ease, i ) => {
-			ease.elapsed += delta;
-			const timeRemaining = ease.duration - ease.elapsed;
-			if ( timeRemaining <= 0 ) {
-				ease.elapsed = 0;
-				ease.onStep( ease.to );
-				easesToRemove.push( i );
-				if ( ease.onComplete ) {
-					ease.onComplete();
+	function runAnimations( delta ) {
+		const animationsToRemove = [];
+		m.animate.animations.forEach( ( animation, i ) => {
+			animation.elapsed += delta;
+			const timeRemaining = animation.duration - animation.elapsed;
+			const t = timeRemaining / animation.duration;
+			const stepValue = animation.stepFunction( animation, delta, t );
+			if( animation.onStep ) {
+				animation.onStep( stepValue );
+			}
+			if( timeRemaining <= 0 || animation.isActive === false ) {
+				animation.elapsed = 0;
+				animationsToRemove.push( i );
+				if( animation.onComplete ) {
+					animation.onComplete();
 				}
 				return;
 			}
-			const t = timeRemaining / ease.duration;
-			const vals = [];
-			for( let i = 0; i < ease.from.length; i++ ) {
-				const val = ease.from[ i ] + ( 1 - easeInOutSine( t ) ) * ease.change[ i ];
-				vals.push( val );
-			}
-			ease.onStep( vals );
 		} );
 
-		// Remove completed eases
-		for ( let i = 0; i < easesToRemove.length; i++ ) {
-			m.ease.eases.splice( easesToRemove[ i ], 1 );
+		// Remove completed animations
+		for ( let i = 0; i < animationsToRemove.length; i++ ) {
+			m.animate.animations.splice( animationsToRemove[ i ], 1 );
 		}
 
-		// Remove ticker if there are no more eases
-		if( m.ease.eases.length === 0 ) {
-			g.app.ticker.remove( runEase );
-			m.ease.ticker = null;
+		// Remove ticker if there are no more animations
+		if( m.animate.animations.length === 0 ) {
+			g.app.ticker.remove( animate );
+			m.animate.ticker = null;
 		}
+	}
+
+	function fadeStep( animation, delta, t ) {
+		const f = animation;
+		if (
+			( f.direction === 1 && f.container.alpha >= 1 ) ||
+			( f.direction === -1 && f.container.alpha <= 0 )
+		) {
+			f.isActive = false;
+			return;
+		}
+		f.container.alpha += f.speed * f.direction * delta;
+	}
+
+	function easeStep( animation, delta, t ) {
+		const vals = [];
+		for( let i = 0; i < animation.from.length; i++ ) {
+			const val = animation.from[ i ] + ( 1 - easeInOutSine( t ) ) * animation.change[ i ];
+			vals.push( val );
+		}
+		return vals;
+	}
+
+	function rotateStep( animation, delta ) {
+		animation.container.rotation += animation.speed * delta;
 	}
 
 	function easeInOutSine( time ) {
 		return ( 1 - Math.cos( Math.PI * time ) ) / 2;
-	}
-
-	function rotate( container, speed ) {
-		const rotation = {
-			"container": container,
-			"speed": speed
-		};
-		m.rotate.rotations.push( rotation );
-		if ( !m.rotate.ticker ) {
-			m.rotate.ticker = g.app.ticker.add( runRotate );
-		}
-	}
-
-	function runRotate( delta ) {
-		for ( let i = 0; i < m.rotate.rotations.length; i++ ) {
-			const rotation = m.rotate.rotations[ i ];
-			rotation.container.rotation += rotation.speed * delta;
-		}
 	}
 
 } )();

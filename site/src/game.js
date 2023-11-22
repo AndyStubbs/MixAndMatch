@@ -17,15 +17,16 @@ g.game = {};
 		"level": null,
 		"map": null,
 		"isActive": false,
-		"activeSquare": null
+		"activeSquare": null,
+		"discardCounter": null
 	};
 
 	g.game.start = start;
 
 	function start( level ) {
+		m.level = level;
 		m.container = new PIXI.Container();
 		g.app.stage.addChild( m.container );
-		m.level = level;
 		createBlackHole();
 		createGame();
 		m.isActive = true;
@@ -92,11 +93,19 @@ g.game = {};
 	}
 
 	function tilePosToScreenPos( tile ) {
+		let offsetY = 0;
+		if( m.level.height > 8 ) {
+			offsetY = m.tileContainerSize * 1.5;
+		} else if( m.level.height > 7 ) {
+			offsetY = m.tileContainerSize;
+		} else if( m.level.height > 6 ) {
+			offsetY = m.tileContainerSize / 2;
+		}
 		return [
 			( tile[ 0 ] * ( m.tileContainerSize + m.tileGap ) ) +
 				g.width / 2 - m.tileContainerSize * ( m.level.width - 1 ) / 2,
 			( tile[ 1 ] * ( m.tileContainerSize + m.tileGap ) ) +
-				g.height / 2 - m.tileContainerSize * m.level.height / 2
+				( g.height / 2 - m.tileContainerSize * m.level.height / 2 ) - offsetY
 		];
 	}
 
@@ -149,11 +158,22 @@ g.game = {};
 			function ( pos ) {
 				m.nextPiece.container.x = pos[ 0 ];
 				m.nextPiece.container.y = pos[ 1 ];
+			}, function () {
+				m.level.discards--;
+				if( m.level.discards < 0 ) {
+					m.level.discards = 0;
+					console.log( "Game Over" );
+				} else {
+					createNextPiece();
+				}
+				m.discardCounter.text = m.level.discards;
 			}
 		);
 	}
 
 	function createBlackHole() {
+
+		// Create the black hole sprite
 		const blackHole = new PIXI.Sprite( g.spritesheet.textures[ "black_hole.png" ] );
 		blackHole.anchor.set( 0.5 );
 		blackHole.x = g.width - g.width / 4;
@@ -164,6 +184,20 @@ g.game = {};
 
 		// Create the black hole animation
 		g.util.rotate( blackHole, 0.004 );
+
+		// Create the discard counter text
+		const discardCounter = new PIXI.Text( m.level.discards, {
+			"fontFamily": "Arial",
+			"fontSize": 32,
+			"fill": "#ffffff",
+			"stroke": "#000000",
+			"strokeThickness": 5
+		} );
+		discardCounter.anchor.set( 0.5 );
+		discardCounter.x = g.width - g.width / 4;
+		discardCounter.y = g.height - m.tileSize * 3 - blackHole.height / 2;
+		m.container.addChild( discardCounter );
+		m.discardCounter = discardCounter;
 	}
 
 	function squarePointerOver( e ) {
