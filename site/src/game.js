@@ -9,7 +9,7 @@ g.game = {};
 		"tileContainerSize": 64,
 		"tileSize": 50,
 		"tileGap": 0,
-		"tileBackTint": "#5193DB",
+		"tileBackTint": "#5183ee",
 		"validSquareTint": "#6aff6a",
 		"invalidSquareTint": "#ff6a6a",
 		"nextPieceBackTint": "#aeaeae",
@@ -216,19 +216,32 @@ g.game = {};
 	function canPlaceTile( boardSquare ) {
 		const pos = boardSquare.customData;
 		const tile = m.map[ pos.y ][ pos.x ].tile;
-		if ( tile ) {
+		if( tile ) {
 			return false;
 		}
 
+		const nextPiece = m.nextPiece;
+
+		let hasMatch = false;
+
 		// Check if the tile is adjacent to another tile
 		const neighbors = getNeighbors( pos.x, pos.y );
-		for ( let i = 0; i < neighbors.length; i++ ) {
-			const neighbor = neighbors[ i ];
-			if ( neighbor.tile ) {
-				return true;
+		for( let i = 0; i < neighbors.length; i++ ) {
+			const neighborTile = neighbors[ i ].tile;
+			if( !neighborTile ) {
+				continue;
+			}
+			if(
+					neighborTile.shape !== "*" &&
+					neighborTile.color !== nextPiece.color &&
+					neighborTile.shape !== nextPiece.shape
+			) {
+				return false;
+			} else {
+				hasMatch = true;
 			}
 		}
-		return false;
+		return hasMatch;
 	}
 
 	function getNeighbors( x, y ) {

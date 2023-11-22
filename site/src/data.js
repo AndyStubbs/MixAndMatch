@@ -16,9 +16,9 @@ g.shapes = {
 g.levels = [
 	{
 		"name": "Level 1",
-		"width": 3,
-		"height": 3,
-		"start": [ 1, 1 ],
+		"width": 5,
+		"height": 5,
+		"start": [ 2, 2 ],
 		"colors": [ "Red", "Blue", "Green" ],
 		"shapes": [ "star1", "circle", "diamond" ]
 	}
