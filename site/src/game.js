@@ -174,7 +174,7 @@ g.game = {};
 	}
 
 	function runDiscardAnimation( piece ) {
-		piece.ease = g.util.ease(
+		g.util.ease(
 			[ piece.container.scale.x, piece.container.scale.y ],
 			[ 0, 0 ],
 			30,
@@ -183,9 +183,10 @@ g.game = {};
 				piece.container.scale.y = pos[ 1 ];
 			}, function () {
 				m.container.removeChild( piece.container );
+				piece.container = null;
 			}
 		);
-		g.util.rotate( piece.container, 0.2, 25 );
+		g.util.rotate( piece.container, 0.2, 30 );
 	}
 
 	function createBlackHole() {

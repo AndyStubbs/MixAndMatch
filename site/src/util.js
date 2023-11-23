@@ -116,7 +116,7 @@ g.util = {};
 
 	function runAnimations( delta ) {
 		const animationsToRemove = [];
-		m.animate.animations.forEach( ( animation, i ) => {
+		m.animate.animations.forEach( ( animation ) => {
 			animation.elapsed += delta;
 			const timeRemaining = animation.duration - animation.elapsed;
 			const t = timeRemaining / animation.duration;
@@ -126,7 +126,7 @@ g.util = {};
 			}
 			if( timeRemaining <= 0 || animation.isActive === false ) {
 				animation.elapsed = 0;
-				animationsToRemove.push( i );
+				animationsToRemove.push( animation );
 				if( animation.onComplete ) {
 					animation.onComplete();
 				}
@@ -136,7 +136,8 @@ g.util = {};
 
 		// Remove completed animations
 		for ( let i = 0; i < animationsToRemove.length; i++ ) {
-			m.animate.animations.splice( animationsToRemove[ i ], 1 );
+			const animation = animationsToRemove[ i ];
+			m.animate.animations.splice( m.animate.animations.indexOf( animation ), 1 );
 		}
 
 		// Remove ticker if there are no more animations
@@ -147,15 +148,18 @@ g.util = {};
 	}
 
 	function fadeStep( animation, delta, t ) {
-		const f = animation;
 		if (
-			( f.direction === 1 && f.container.alpha >= 1 ) ||
-			( f.direction === -1 && f.container.alpha <= 0 )
+			( animation.direction === 1 && animation.container.alpha >= 1 ) ||
+			( animation.direction === -1 && animation.container.alpha <= 0 )
 		) {
-			f.isActive = false;
+			animation.isActive = false;
 			return;
 		}
-		f.container.alpha += f.speed * f.direction * delta;
+		if( !animation.container ) {
+			animation.isActive = false;
+			return;
+		}
+		animation.container.alpha += animation.speed * animation.direction * delta;
 	}
 
 	function easeStep( animation, delta, t ) {
@@ -168,6 +172,10 @@ g.util = {};
 	}
 
 	function rotateStep( animation, delta ) {
+		if( !animation.container ) {
+			animation.isActive = false;
+			return;
+		}
 		animation.container.rotation += animation.speed * delta;
 	}
 
