@@ -159,6 +159,7 @@ g.game = {};
 				m.nextPiece.container.x = pos[ 0 ];
 				m.nextPiece.container.y = pos[ 1 ];
 			}, function () {
+				runDiscardAnimation( m.nextPiece );
 				m.level.discards--;
 				if( m.level.discards < 0 ) {
 					m.level.discards = 0;
@@ -167,8 +168,24 @@ g.game = {};
 					createNextPiece();
 				}
 				m.discardCounter.text = m.level.discards;
+
 			}
 		);
+	}
+
+	function runDiscardAnimation( piece ) {
+		piece.ease = g.util.ease(
+			[ piece.container.scale.x, piece.container.scale.y ],
+			[ 0, 0 ],
+			30,
+			function ( pos ) {
+				piece.container.scale.x = pos[ 0 ];
+				piece.container.scale.y = pos[ 1 ];
+			}, function () {
+				m.container.removeChild( piece.container );
+			}
+		);
+		g.util.rotate( piece.container, 0.2, 25 );
 	}
 
 	function createBlackHole() {

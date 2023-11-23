@@ -58,14 +58,15 @@ g.util = {};
 		} );
 	}
 
-	function rotate( container, speed ) {
+	function rotate( container, speed, duration ) {
 		if( speed === undefined || speed === null ) {
 			speed = 0.05;
 		}
 		animate( {
 			"action": "rotate",
 			"container": container,
-			"speed": speed
+			"speed": speed,
+			"duration": duration
 		} );
 	}
 
