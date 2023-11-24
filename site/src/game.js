@@ -29,7 +29,6 @@ g.game = {};
 		g.app.stage.addChild( m.container );
 		createBlackHole();
 		createGame();
-		m.isActive = true;
 	}
 
 	function createGame() {
@@ -43,7 +42,8 @@ g.game = {};
 				m.map[ row ].push( {
 					"tile": null,
 					"square": boardSquare,
-					"backTint": m.tileBackTint
+					"backTint": m.tileBackTint,
+					"cleared": false,
 				} );
 				if( col === level.start[ 0 ] && row === level.start[ 1 ] ) {
 					startBoardSquare = boardSquare;
@@ -171,6 +171,7 @@ g.game = {};
 
 			}
 		);
+		m.isActive = true;
 	}
 
 	function runDiscardAnimation( piece ) {
@@ -198,6 +199,15 @@ g.game = {};
 		blackHole.y = g.height - m.tileSize * 3;
 		blackHole.scale.x =  0.85;
 		blackHole.scale.y =  0.85;
+		blackHole.interactive = true;
+		blackHole.buttonMode = true;
+		blackHole.on( "pointerdown", blackHolePointerDown );
+		blackHole.on( "pointerover", function () {
+			blackHole.tint = "#aaaaaa"
+		} );
+		blackHole.on( "pointerout", function () {
+			blackHole.tint = "#ffffff";
+		} );
 		m.container.addChild( blackHole );
 
 		// Create the black hole animation
@@ -217,6 +227,41 @@ g.game = {};
 		m.container.addChild( discardCounter );
 		m.discardCounter = discardCounter;
 	}
+
+	function blackHolePointerDown( e ) {
+		moveNextPiece( e.currentTarget.x, e.currentTarget.y, function () {
+			runDiscardAnimation( m.nextPiece );
+			m.level.discards--;
+			if( m.level.discards < 0 ) {
+				m.level.discards = 0;
+				console.log( "Game Over" );
+			} else {
+				createNextPiece();
+			}
+			m.discardCounter.text = m.level.discards;
+		} );
+	}
+
+	function moveNextPiece( x, y, onComplete ) {
+		if( !m.isActive ) {
+			return;
+		}
+		m.isActive = false;
+		m.nextPiece.ease.stop();
+		m.nextPiece.ease = g.util.ease(
+			[ m.nextPiece.container.x, m.nextPiece.container.y ],
+			[ x, y ],
+			25,
+			function ( pos ) {
+				m.nextPiece.container.x = pos[ 0 ];
+				m.nextPiece.container.y = pos[ 1 ];
+			},
+			function () {
+				onComplete();
+			}
+		);
+	}
+
 
 	function squarePointerOver( e ) {
 		const boardSquare = e.currentTarget;
@@ -248,32 +293,99 @@ g.game = {};
 		if( !canPlaceTile( boardSquare ) ) {
 			return;
 		}
-		m.isActive = false;
-		m.nextPiece.ease.stop();
-		m.nextPiece.ease = g.util.ease(
-			[ m.nextPiece.container.x, m.nextPiece.container.y ],
-			[ boardSquare.x, boardSquare.y ],
-			25,
-			function ( pos ) {
-				m.nextPiece.container.x = pos[ 0 ];
-				m.nextPiece.container.y = pos[ 1 ];
-			},
-			function () {
-				placeTile( boardSquare, m.nextPiece );
-			}
-		);
+		moveNextPiece( boardSquare.x, boardSquare.y, function () {
+			placeTile( boardSquare, m.nextPiece );
+		} );
 	}
 
 	function placeTile( boardSquare, tile ) {
 		const pos = boardSquare.customData;
 		m.map[ pos.y ][ pos.x ].tile = tile;
 		m.map[ pos.y ][ pos.x ].backTint = m.clearedSquareTint;
+		m.map[ pos.y ][ pos.x ].cleared = true;
 		boardSquare.tint = m.clearedSquareTint;
 		createNextPiece();
-		m.isActive = true;
+
+		// Set the tint of the active square
 		if( m.activeSquare ) {
 			setSquareHoverTint( m.activeSquare );
 		}
+
+		// Check if row is cleared
+		let rowCleared = true;
+		for( let col = 0; col < m.level.width; col++ ) {
+			if( !m.map[ pos.y ][ col ].tile ) {
+				rowCleared = false;
+				break;
+			}
+		}
+		if( rowCleared ) {
+			clearRow( pos.y );
+		}
+
+		// Check if column is cleared
+		let colCleared = true;
+		for( let row = 0; row < m.level.height; row++ ) {
+			if( !m.map[ row ][ pos.x ].tile ) {
+				colCleared = false;
+				break;
+			}
+		}
+		if( colCleared ) {
+			clearColumn( pos.x );
+		}
+
+		// Check if the level is complete
+		let levelComplete = true;
+		for( let row = 0; row < m.level.height; row++ ) {
+			for( let col = 0; col < m.level.width; col++ ) {
+				if( !m.map[ row ][ col ].cleared ) {
+					levelComplete = false;
+					break;
+				}
+			}
+		}
+		if( levelComplete ) {
+			completeLevel();
+		}
+	}
+
+	function clearRow( row ) {
+		for( let col = 0; col < m.level.width; col++ ) {
+			const tile = m.map[ row ][ col ].tile;
+			if( tile ) {
+				m.container.removeChild( tile.container );
+				m.map[ row ][ col ].tile = null;
+			}
+		}
+	}
+
+	function clearColumn( col ) {
+		for( let row = 0; row < m.level.height; row++ ) {
+			const tile = m.map[ row ][ col ].tile;
+			if( tile ) {
+				m.container.removeChild( tile.container );
+				m.map[ row ][ col ].tile = null;
+			}
+		}
+	}
+
+	function completeLevel() {
+		unloadLevel();
+	}
+
+	function unloadLevel() {
+
+		while( m.container.children.length > 0 ) {
+			m.container.removeChildAt( 0 );
+		}
+		m.container = null;
+		m.nextPiece = null;
+		m.level = null;
+		m.map = null;
+		m.isActive = false;
+		m.activeSquare = null;
+		m.discardCounter = null;
 	}
 
 	function canPlaceTile( boardSquare ) {

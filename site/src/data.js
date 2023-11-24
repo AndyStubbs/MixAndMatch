@@ -31,5 +31,14 @@ g.levels = [
 		"colors": [ "Red", "Blue", "Green" ],
 		"shapes": [ "star2", "circle", "diamond" ],
 		"discards": 3
-	}
+	},
+	{
+		"name": "Level 2",
+		"width": 4,
+		"height": 4,
+		"start": [ 1, 1 ],
+		"colors": [ "Red", "Blue", "Green" ],
+		"shapes": [ "star2", "circle", "diamond" ],
+		"discards": 3
+	},
 ]
